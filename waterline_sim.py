@@ -5,7 +5,7 @@ Created on Mar 8, 2022
 '''
 import numpy as np
 import json
-import vtk
+
 from stl import mesh
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     rho     = 1000
     g       = 9.81
     
-    m = mesh.Mesh.from_file("bo.stl", calculate_normals = True)
+    m = mesh.Mesh.from_file("bo2.stl", calculate_normals = True)
     print("Total volume: {:.3f} m**3".format(m.get_mass_properties()[0]))
     print("Bounding box: ")
     print("X : {:.3f}, {:.3f}".format(np.max(m.x), np.min(m.x)))
@@ -100,13 +100,13 @@ if __name__ == "__main__":
     print("F @ ref: {:.2f}, {:.2f}, {:.2f}".format(*F))
     print("M @ ref: {:.2f}, {:.2f}, {:.2f}".format(*M))
     
-    ref     = B
-    F, M    = calc_buoyancy(m, ref, rho, g)
-    B       = calc_center_of_buoyancy(ref, F, M)
+    #ref     = B
+    #F, M    = calc_buoyancy(m, ref, rho, g)
+    #B       = calc_center_of_buoyancy(ref, F, M)
     
-    print("Center of buoyancy: {:.2f}, {:.2f}, {:.2f}".format(*ref[0]))
-    print("F @ COB: {:.2f}, {:.2f}, {:.2f}".format(*F))
-    print("M @ COB: {:.2f}, {:.2f}, {:.2f}".format(*M))
+    #print("Center of buoyancy: {:.2f}, {:.2f}, {:.2f}".format(*ref[0]))
+    #print("F @ COB: {:.2f}, {:.2f}, {:.2f}".format(*F))
+    #print("M @ COB: {:.2f}, {:.2f}, {:.2f}".format(*M))
     
     M_list = []
     B_list = []
@@ -124,7 +124,7 @@ if __name__ == "__main__":
         refresh_centroids(m)
         
         Fz = 0
-        while (Fz_orig - Fz)**2 > 1e-2:
+        while (Fz_orig - Fz)**2 > 1e-4:
             F, M = calc_buoyancy(m, ref, rho, g)  
             Fz = F[2]
             dF = Fz - Fz_orig
