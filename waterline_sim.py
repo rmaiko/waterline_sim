@@ -110,6 +110,7 @@ if __name__ == "__main__":
     
     M_list = []
     B_list = []
+    MC_list = []
     
     phi_list = np.linspace(-30,30)
     m_orig = copy.deepcopy(m)
@@ -133,23 +134,37 @@ if __name__ == "__main__":
             refresh_centroids(m)
         
         B    = calc_center_of_buoyancy(ref, F, M)
+        
+        Fn = F / np.linalg.norm(F)
+        t = - B[0,1] / F[1]
+        MC = B + t * Fn
+        
         M_list.append(M) 
         B_list.append(B[0])
+        MC_list.append(MC[0])
         print(F, M, B)
     
     M_list = np.array(M_list)
     B_list = np.array(B_list)
+    MC_list = np.array(MC_list)
     
-    plt.subplot(1,2,1)
+    plt.subplot(1,3,1)
     plt.plot(phi_list, M_list[:,0])
     plt.title("Rolling moment")
     plt.xlabel(r"$\theta$ (deg)")
     plt.ylabel("Righting moment (Nm)")
     plt.grid()
     
-    plt.subplot(1,2,2)
+    plt.subplot(1,3,2)
     plt.plot(B_list[:,1], B_list[:,2], "k.")
     plt.title("CoB Position")
+    plt.xlabel("y (m)")
+    plt.ylabel("z (m)")
+    plt.grid()
+    
+    plt.subplot(1,3,3)
+    plt.plot(MC_list[:,1], MC_list[:,2], "k.")
+    plt.title("Metacender Position")
     plt.xlabel("y (m)")
     plt.ylabel("z (m)")
     plt.grid()
