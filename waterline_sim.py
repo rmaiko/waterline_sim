@@ -7,8 +7,7 @@ import numpy as np
 from stl import mesh
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
-import copy
-from hamcrest.core.core.isnone import none
+import pandas as pd
     
     
 class BoatMesh(object):
@@ -66,10 +65,10 @@ class BoatMesh(object):
         axes = mplot3d.Axes3D(figure)
         
         # Load the STL files and add the vectors to the plot
-        axes.add_collection3d(mplot3d.art3d.Poly3DCollection(m.vectors))
+        axes.add_collection3d(mplot3d.art3d.Poly3DCollection(self.mesh.vectors))
         
-        # Auto scale to the mesh size
-        scale = m.points.flatten()
+        # Auto sale to the mesh size
+        scale = self.mesh.points.flatten()
         axes.auto_scale_xyz(scale, scale, scale)
         
         # Show the plot to the screen
@@ -98,7 +97,7 @@ class BoatMesh(object):
             t = (B[0,1] - (np.tan(self.phi) - self.reference[0,2])*B[0,2]) / (F[2]*np.tan(self.phi) - F[1])
             MC = B + t * F
         else:
-            MC = None
+            MC = np.array([[np.nan, np.nan, np.nan]])
             
         self.mc = MC
         
@@ -106,8 +105,7 @@ class BoatMesh(object):
             print("*** Buoyancy calculation subroutine ***")
             print("Ref (x,y,z): {:.3f}, {:.3f}, {:.3f}".format(*self.reference[0]))
             print("CoB (x,y,z): {:.3f}, {:.3f}, {:.3f}".format(*B[0]))
-            if self.mc is not None:
-                print("MCt (x,y,z): {:.3f}, {:.3f}, {:.3f}".format(*self.mc[0]))
+            print("MCt (x,y,z): {:.3f}, {:.3f}, {:.3f}".format(*self.mc[0]))
             print("F @ ref: {:.1f}, {:.1f}, {:.1f}".format(*F))
             print("M @ ref: {:.1f}, {:.1f}, {:.1f}".format(*M))
   
@@ -143,8 +141,9 @@ if __name__ == "__main__":
     rho     = 1000
     g       = 9.81
     
-    m = BoatMesh("bo2.stl")
+    m = BoatMesh("bo3.stl")
     m.print_mesh_info()
+    m.display_mesh()
     
     _, _, B, _ = m.calc_buoyancy(rho, g, True)
 
@@ -160,11 +159,11 @@ if __name__ == "__main__":
     #print("F @ COB: {:.2f}, {:.2f}, {:.2f}".format(*F))
     #print("M @ COB: {:.2f}, {:.2f}, {:.2f}".format(*M))
     
-    M_list = []
-    B_list = []
-    MC_list = []
+    data = []
     
     phi_list = np.linspace(-10,10,50)*np.pi/180
+    
+    
     Fz_target = 72*9.81
     
     for phi in phi_list:
@@ -172,33 +171,72 @@ if __name__ == "__main__":
         m.floating_height(Fz_target)
         F, M, B, MC = m.calc_buoyancy(verbose = True)
         
-        M_list.append(M) 
-        B_list.append(B[0])
-        if MC is not None:
-            MC_list.append(MC[0])
-    
-    M_list = np.array(M_list)
-    B_list = np.array(B_list)
-    MC_list = np.array(MC_list)
-    
+        data.append({
+            "phi" : phi,
+            "theta" : 0,
+            "F" : F,
+            "M" : M,
+            "B" : B,
+            "MC" : MC})
+        
+    df = pd.DataFrame(data)
     fig = plt.figure()
     
-    plt.subplot(2,2,1)
-    plt.plot(phi_list*180/np.pi, M_list[:,0])
+    plt.subplot(2,3,1)
+    plt.plot(df["phi"]*180/np.pi, [x[0] for x in df["M"]])
     plt.title("Rolling moment")
-    plt.xlabel(r"$\theta$ (deg)")
+    plt.xlabel(r"$\phi$ (deg)")
     plt.ylabel("Righting moment (Nm)")
     plt.grid()
     
-    plt.subplot(2,2,2)
-    plt.plot(B_list[:,0], B_list[:,2])
+    plt.subplot(2,3,2)
+    plt.plot([x[0][0] for x in df["B"]], [x[0][2] for x in df["B"]])
     plt.title("CoB Position")
     plt.xlabel("x (m)")
     plt.ylabel("z (m)")
     plt.grid()
     
-    plt.subplot(2,2,3)
-    plt.plot(MC_list[:,0], MC_list[:,2])
+    plt.subplot(2,3,3)
+    plt.plot([x[0][0] for x in df["MC"]], [x[0][2] for x in df["MC"]])
+    plt.title("Metacenter Position")
+    plt.xlabel("x (m)")
+    plt.ylabel("z (m)")
+    plt.grid()
+        
+    theta_list = np.linspace(-10,10,50)*np.pi/180
+    data = []
+    for theta in theta_list:
+        m.set_attitude(phi = 0, theta = theta)
+        m.floating_height(Fz_target)
+        F, M, B, MC = m.calc_buoyancy(verbose = True)
+        
+        data.append({
+            "phi" : 0,
+            "theta" : theta,
+            "F" : F,
+            "M" : M,
+            "B" : B,
+            "MC" : MC})
+        
+    df = pd.DataFrame(data)
+
+    
+    plt.subplot(2,3,4)
+    plt.plot(df["theta"]*180/np.pi, [x[1] for x in df["M"]])
+    plt.title("Piching moment")
+    plt.xlabel(r"$\theta$ (deg)")
+    plt.ylabel("Piching moment (Nm)")
+    plt.grid()
+    
+    plt.subplot(2,3,5)
+    plt.plot([x[0][0] for x in df["B"]], [x[0][2] for x in df["B"]])
+    plt.title("CoB Position")
+    plt.xlabel("x (m)")
+    plt.ylabel("z (m)")
+    plt.grid()
+    
+    plt.subplot(2,3,6)
+    plt.plot([x[0][0] for x in df["MC"]], [x[0][2] for x in df["MC"]])
     plt.title("Metacenter Position")
     plt.xlabel("x (m)")
     plt.ylabel("z (m)")
